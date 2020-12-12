@@ -71,11 +71,8 @@ static unsigned int get_file_line_length() {
         if (i == optimalSize) {
             i = 0;
             read_bytes = read(fd, p, optimalSize);
-            if (read_bytes  < optimalSize) {
+            if (read_bytes < optimalSize && read_bytes > 0) {
                 optimalSize = read_bytes;
-            }
-            if (read_bytes == 0) {
-                break;
             }
         }
         i++;
