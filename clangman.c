@@ -5,6 +5,7 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <time.h>
 
 #define NAMESIZE 13
 #define WORDLIST "wordlist.txt"
@@ -12,6 +13,7 @@
 
 typedef struct {
     char playerName[NAMESIZE];
+    char *chosenWord;
 } gameState;
 
 gameState game;
@@ -40,13 +42,18 @@ static bool print_player_name() {
     return true;
 }
 
+static bool print_chosen_word() {
+    printf("%s\n", game.chosenWord);
+    return true;
+}
+
 static unsigned int get_file_line_length() {
     int ret = 0;
     struct statfs fsInfo = {0};
     int fd;
     fd = open(WORDLIST, O_RDONLY);
     // DEBUG
-    printf("FILE DESCRIPTOR: %d\n", fd);
+    printf("FILE DESCRIPTOR (get_file_line_length): %d\n", fd);
     long optimalSize;
 
     if(fstatfs(fd, &fsInfo) == -1) {
@@ -83,9 +90,67 @@ static unsigned int get_file_line_length() {
     return ret;
 }
 
+static unsigned int get_random_range(unsigned int begin, unsigned int end) {
+    srand(time(0));
+    return (rand() % (end - begin +1)) + begin;
+}
+
+static bool set_word_by_line_num(unsigned int line) {
+    bool ret = false;
+    int current_line = 0;
+    struct statfs fsInfo = {0};
+    int fd;
+    fd = open(WORDLIST, O_RDONLY);
+    // DEBUG
+    printf("FILE DESCRIPTOR (get_word_by_line_num): %d\n", fd);
+    long optimalSize;
+
+    if(fstatfs(fd, &fsInfo) == -1) {
+        optimalSize = 4 * 1024 * 1024;
+    }
+    else {
+        optimalSize = fsInfo.f_bsize;
+    }
+
+    char *p = malloc(sizeof(*p) * optimalSize);
+    char *chosen_word = malloc(100);
+    size_t read_bytes = read(fd, p, optimalSize);
+    unsigned int i = 0;
+    unsigned int j = 0;
+
+    while (read_bytes) {
+        if (p[i] == '\n') {
+            current_line++;
+        }
+        if (current_line == line) {
+            chosen_word[j] = p[i];
+            j++;
+        }
+        if (current_line > line && j > 0) {
+            chosen_word[j] = '\0';
+            game.chosenWord = chosen_word;
+            ret = true;
+        }
+        if (i == optimalSize) {
+            i = 0;
+            read_bytes = read(fd, p, optimalSize);
+            if (read_bytes < optimalSize && read_bytes > 0) {
+                optimalSize = read_bytes;
+            }
+        }
+        i++;
+    }
+
+    close(fd);
+    free(p);
+    return ret;
+}
+
 int main(void) {
     int status = EXIT_FAILURE;
     int name_attempts = NAMEATTEMPTS;
+    unsigned int line_length;
+    unsigned int chosen_line;
 
     if (print_welcome_message()){
         status = EXIT_SUCCESS;
@@ -101,6 +166,11 @@ int main(void) {
     else {
         status = print_player_name();
     }
-    printf("%u\n", get_file_line_length());
+    line_length = get_file_line_length();
+    chosen_line = get_random_range(0, line_length);
+    if (set_word_by_line_num(chosen_line)) {
+        status = print_chosen_word();
+    }
+
     return status;
 }
