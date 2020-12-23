@@ -56,6 +56,7 @@ static bool get_player_name() {
     if (strlen(game.playerName) < 2) {
         return false;
     }
+    game.playerName[strcspn(game.playerName, "\n")] = 0;
     return true;
 }
 
