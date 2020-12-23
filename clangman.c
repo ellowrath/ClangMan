@@ -10,21 +10,48 @@
 #define NAMESIZE 13
 #define WORDLIST "wordlist.txt"
 #define NAMEATTEMPTS 3
+#define MAXMISSEDGUESSES 6
+#define WELCOME "Welcome to ClangMan."
+#define NAMEREQUEST "Please enter your name, 12 characters or less: "
+#define NAMEDENIED "You've failed to enter your name 3 times, Game terminated!"
+#define DUPEGUESS "You've already guessed that letter, please try again."
 
 typedef struct {
     char playerName[NAMESIZE];
     char *chosenWord;
+    char *maskedWord;
+    char *guessedChars;
+    bool running;
+    unsigned int guesses;
+    unsigned int missed;
 } gameState;
 
-gameState game;
+static gameState game;
+
+static void debug_game_state() {
+    printf("DEBUGGING THE GAME STATE\n");
+    printf("Player Name: %s\n", game.playerName);
+    printf("The chosen word: %s\n", game.chosenWord);
+    printf("The masked word: %s\n", game.maskedWord);
+    printf("The guess chars: %s\n", game.guessedChars);
+    printf("Length of guess chars: %ld\n", strlen(game.guessedChars));
+    printf("The number of guesses: %d\n", game.guesses);
+    printf("The number of misses: %d\n", game.missed);
+    printf("END OF DEBUGGING\n\n");
+    fflush(stdout);
+}
+
+static void flush_stdin() {
+    while(fgetc(stdin) != '\n');
+}
 
 static bool print_welcome_message() {
-    printf("%s\n", "Welcome to ClangMan.");
+    printf("%s\n", WELCOME);
     return true;
 }
 
 static bool get_player_name() {
-    printf("%s\n", "Please enter your name, 12 characters or less: ");
+    printf("%s\n", NAMEREQUEST);
     fgets(game.playerName, NAMESIZE, stdin);
     if (strlen(game.playerName) < 2) {
         return false;
@@ -33,7 +60,7 @@ static bool get_player_name() {
 }
 
 static bool print_name_error() {
-    printf("%s\n", "You've failed to enter your name 3 times. Game terminated!");
+    printf("%s\n", NAMEDENIED);
     return true;
 }
 
@@ -52,8 +79,6 @@ static unsigned int get_file_line_length() {
     struct statfs fsInfo = {0};
     int fd;
     fd = open(WORDLIST, O_RDONLY);
-    // DEBUG
-    printf("FILE DESCRIPTOR (get_file_line_length): %d\n", fd);
     long optimalSize;
 
     if(fstatfs(fd, &fsInfo) == -1) {
@@ -101,8 +126,6 @@ static bool set_word_by_line_num(unsigned int line) {
     struct statfs fsInfo = {0};
     int fd;
     fd = open(WORDLIST, O_RDONLY);
-    // DEBUG
-    printf("FILE DESCRIPTOR (get_word_by_line_num): %d\n", fd);
     long optimalSize;
 
     if(fstatfs(fd, &fsInfo) == -1) {
@@ -123,11 +146,11 @@ static bool set_word_by_line_num(unsigned int line) {
             current_line++;
         }
         if (current_line == line) {
-            chosen_word[j] = p[i];
+            chosen_word[j] = p[i+1];
             j++;
         }
         if (current_line > line && j > 0) {
-            chosen_word[j] = '\0';
+            chosen_word[j-1] = '\0';
             game.chosenWord = chosen_word;
             ret = true;
         }
@@ -140,17 +163,87 @@ static bool set_word_by_line_num(unsigned int line) {
         }
         i++;
     }
+    
+    char *masked_word = malloc(strlen(game.chosenWord));
+
+    for (i = 0; i < strlen(chosen_word); i++) {
+        masked_word[i] = '~';
+    }
+    masked_word[i] = '\0';
+    game.maskedWord = masked_word;
+
+    // printf("chosen word %s is %zu characters long\n", game.chosenWord, strlen(game.chosenWord));
+    // printf("masked word %s is %zu characters long\n", game.maskedWord, strlen(game.maskedWord));
 
     close(fd);
     free(p);
     return ret;
 }
 
+static bool print_masked_word() {
+    printf("%s\n", game.maskedWord);
+    return true;
+}
+
+static bool print_guesses_vs_max() {
+    printf("%d characters guessed, %d guesses left\n", game.guesses, MAXMISSEDGUESSES - game.guesses);
+    return true;
+}
+
+static bool prepare_game_state() {
+    game.guessedChars = calloc(sizeof(char), strlen(game.chosenWord) + MAXMISSEDGUESSES);
+    return true;
+}
+
+static char get_guess() {
+    char c;
+    printf("Please enter a single character guess: ");
+    fflush(stdout);
+    c = fgetc(stdin);
+    flush_stdin();
+    game.guesses++;
+    return c;
+}
+
+static bool is_char_in_string(char c, char* char_array) {
+    bool ret = false;
+    for (int i = 0; i < strlen(char_array); i++) {
+        if (c == char_array[i]) {
+            ret = true;
+        }
+    }
+    return ret;
+}
+
+static void game_loop() {
+    static unsigned int loop = 0;
+    debug_game_state();
+    char guess = get_guess();
+    if (is_char_in_string(guess, game.guessedChars)) {
+        printf("%s\n", DUPEGUESS);
+    }
+    else {
+        if(is_char_in_string(guess, game.chosenWord)) {
+
+        }
+        game.guessedChars[strlen(game.guessedChars)] = guess;
+    }
+
+    if (loop == 3) {
+        game.running = false;
+    }
+    loop++;
+    // display letters guessed already
+    // prompt for guess
+    // evaluate win/loss state
+
+}
+
 int main(void) {
     int status = EXIT_FAILURE;
     int name_attempts = NAMEATTEMPTS;
-    unsigned int line_length;
     unsigned int chosen_line;
+    game.running = true;
 
     if (print_welcome_message()){
         status = EXIT_SUCCESS;
@@ -166,10 +259,16 @@ int main(void) {
     else {
         status = print_player_name();
     }
-    line_length = get_file_line_length();
-    chosen_line = get_random_range(0, line_length);
+
+    chosen_line = get_random_range(0, get_file_line_length());
     if (set_word_by_line_num(chosen_line)) {
         status = print_chosen_word();
+    }
+
+    prepare_game_state();
+
+    while (game.running) {
+        game_loop();
     }
 
     return status;
