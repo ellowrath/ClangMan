@@ -11,6 +11,10 @@
 #define WORDLIST "wordlist.txt"
 #define NAMEATTEMPTS 3
 #define MAXMISSEDGUESSES 6
+#define WELCOME "Welcome to ClangMan."
+#define NAMEREQUEST "Please enter your name, 12 characters or less: "
+#define NAMEDENIED "You've failed to enter your name 3 times, Game terminated!"
+#define DUPEGUESS "You've already guessed that letter, please try again."
 
 typedef struct {
     char playerName[NAMESIZE];
@@ -33,16 +37,21 @@ static void debug_game_state() {
     printf("Length of guess chars: %ld\n", strlen(game.guessedChars));
     printf("The number of guesses: %d\n", game.guesses);
     printf("The number of misses: %d\n", game.missed);
+    printf("END OF DEBUGGING\n\n");
+    fflush(stdout);
 }
 
+static void flush_stdin() {
+    while(fgetc(stdin) != '\n');
+}
 
 static bool print_welcome_message() {
-    printf("%s\n", "Welcome to ClangMan.");
+    printf("%s\n", WELCOME);
     return true;
 }
 
 static bool get_player_name() {
-    printf("%s\n", "Please enter your name, 12 characters or less: ");
+    printf("%s\n", NAMEREQUEST);
     fgets(game.playerName, NAMESIZE, stdin);
     if (strlen(game.playerName) < 2) {
         return false;
@@ -51,7 +60,7 @@ static bool get_player_name() {
 }
 
 static bool print_name_error() {
-    printf("%s\n", "You've failed to enter your name 3 times. Game terminated!");
+    printf("%s\n", NAMEDENIED);
     return true;
 }
 
@@ -182,8 +191,7 @@ static bool print_guesses_vs_max() {
 }
 
 static bool prepare_game_state() {
-    game.guessedChars = malloc(MAXMISSEDGUESSES + strlen(game.maskedWord));
-    game.guessedChars[0] = '\0';
+    game.guessedChars = calloc(sizeof(char), strlen(game.chosenWord) + MAXMISSEDGUESSES);
     return true;
 }
 
@@ -191,16 +199,16 @@ static char get_guess() {
     char c;
     printf("Please enter a single character guess: ");
     fflush(stdout);
-    read(STDIN_FILENO, &c, 1);
-    fflush(stdin);
+    c = fgetc(stdin);
+    flush_stdin();
     game.guesses++;
     return c;
 }
 
-static bool is_guess_dupe(char c) {
+static bool is_char_in_string(char c, char* char_array) {
     bool ret = false;
-    for (int i = 0; i < strlen(game.guessedChars); i++) {
-        if (c == game.guessedChars[i]) {
+    for (int i = 0; i < strlen(char_array); i++) {
+        if (c == char_array[i]) {
             ret = true;
         }
     }
@@ -211,11 +219,13 @@ static void game_loop() {
     static unsigned int loop = 0;
     debug_game_state();
     char guess = get_guess();
-    printf("%c\n", guess);
-    if (is_guess_dupe(guess)) {
-        printf("You dumb fuck!\n");
+    if (is_char_in_string(guess, game.guessedChars)) {
+        printf("%s\n", DUPEGUESS);
     }
     else {
+        if(is_char_in_string(guess, game.chosenWord)) {
+
+        }
         game.guessedChars[strlen(game.guessedChars)] = guess;
     }
 
