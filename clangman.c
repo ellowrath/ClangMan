@@ -227,6 +227,9 @@ static void game_loop() {
         if(is_char_in_string(guess, game.chosenWord)) {
 
         }
+        else {
+            game.missed++;
+        }
         game.guessedChars[strlen(game.guessedChars)] = guess;
     }
 
