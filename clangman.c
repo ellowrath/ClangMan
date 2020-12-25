@@ -15,6 +15,12 @@
 #define NAMEREQUEST "Please enter your name, 12 characters or less: "
 #define NAMEDENIED "You've failed to enter your name 3 times, Game terminated!"
 #define DUPEGUESS "You've already guessed that letter, please try again."
+#define CORRECTLETTER1 "Good stuff! "
+#define CORRECTLETTER2 " is a good guess."
+#define INCORRECTLETTER1 "I'm sorry! "
+#define INCORRECTLETTER2 " is not a good guess."
+#define MASKEDWORD "Guess this word:"
+#define GUESSEDLETTERS "These are you past guesses:"
 
 typedef struct {
     char playerName[NAMESIZE];
@@ -71,11 +77,6 @@ static bool print_player_name() {
     return true;
 }
 
-static bool print_chosen_word() {
-    printf("%s\n", game.chosenWord);
-    return true;
-}
-
 static unsigned int get_file_line_length() {
     int ret = 0;
     struct statfs fsInfo = {0};
@@ -89,8 +90,6 @@ static unsigned int get_file_line_length() {
     else {
         optimalSize = fsInfo.f_bsize;
     }
-    // DEBUG
-    printf("OPTIMAL SIZE: %ld\n", optimalSize);
 
     char *p = malloc(sizeof(*p) * optimalSize);
     size_t read_bytes = read(fd, p, optimalSize);
@@ -227,7 +226,7 @@ static bool evaluate_victory() {
 }
 
 static void game_loop() {
-    debug_game_state();
+    // debug_game_state();
     char guess = get_guess();
     if (is_char_in_string(guess, game.guessedChars)) {
         printf("%s\n", DUPEGUESS);
@@ -235,20 +234,24 @@ static void game_loop() {
     else {
         if(is_char_in_string(guess, game.chosenWord)) {
             process_successful_guess(guess);
+            printf("%s%c%s\n", CORRECTLETTER1, guess, CORRECTLETTER2);
             if (evaluate_victory()) {
                 game.running = false;
             }
         }
         else {
+            printf("%s%c%s\n", INCORRECTLETTER1, guess, INCORRECTLETTER2);
             game.missed++;
         }
         game.guessedChars[strlen(game.guessedChars)] = guess;
         game.guesses++;
+        printf("%s %s\n", MASKEDWORD, game.maskedWord);
+        printf("%s %s\n", GUESSEDLETTERS, game.guessedChars);
     }
 
     if (game.missed >= MAXMISSEDGUESSES) {
         game.running = false;
-        debug_game_state();
+        // debug_game_state();
     }
 
 }
@@ -275,11 +278,10 @@ int main(void) {
     }
 
     chosen_line = get_random_range(0, get_file_line_length());
-    if (set_word_by_line_num(chosen_line)) {
-        status = print_chosen_word();
-    }
+    set_word_by_line_num(chosen_line);
 
     prepare_game_state();
+    printf("%s %s\n", MASKEDWORD, game.maskedWord);
 
     while (game.running) {
         game_loop();
