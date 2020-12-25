@@ -209,6 +209,14 @@ static bool is_char_in_string(char c, char* char_array) {
     return ret;
 }
 
+static void process_successful_guess(char c) {
+    for (int i = 0; i < strlen(game.chosenWord); i++) {
+        if (c == game.chosenWord[i]) {
+            game.maskedWord[i] = game.chosenWord[i];
+        }
+    }
+}
+
 static void game_loop() {
     debug_game_state();
     char guess = get_guess();
@@ -217,7 +225,7 @@ static void game_loop() {
     }
     else {
         if(is_char_in_string(guess, game.chosenWord)) {
-            // function to handle positive guesses
+            process_successful_guess(guess);
         }
         else {
             game.missed++;
