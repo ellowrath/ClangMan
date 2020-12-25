@@ -217,6 +217,15 @@ static void process_successful_guess(char c) {
     }
 }
 
+static bool evaluate_victory() {
+    if (strcmp(game.chosenWord, game.maskedWord) == 0) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 static void game_loop() {
     debug_game_state();
     char guess = get_guess();
@@ -226,6 +235,9 @@ static void game_loop() {
     else {
         if(is_char_in_string(guess, game.chosenWord)) {
             process_successful_guess(guess);
+            if (evaluate_victory()) {
+                game.running = false;
+            }
         }
         else {
             game.missed++;
@@ -272,7 +284,14 @@ int main(void) {
     while (game.running) {
         game_loop();
     }
-    // function to evaluate success
+    if (evaluate_victory()) {
+        printf("Congratulations %s, you guessed \"%s\" in %d.\n", game.playerName, game.chosenWord, game.guesses);
+        printf("You had %d guesses left before failure. Good job!\n", MAXMISSEDGUESSES - game.missed);
+    }
+    else {
+        printf("I'm sorry to report that you have failed to guess \"%s\".\n", game.chosenWord); 
+        printf("Good luck next time %s.\n", game.playerName);
+    }
 
     return status;
 }
