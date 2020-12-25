@@ -22,6 +22,7 @@ typedef struct {
     char *maskedWord;
     char *guessedChars;
     bool running;
+    bool success;
     unsigned int guesses;
     unsigned int missed;
 } gameState;
@@ -181,17 +182,10 @@ static bool set_word_by_line_num(unsigned int line) {
     return ret;
 }
 
-static bool print_masked_word() {
-    printf("%s\n", game.maskedWord);
-    return true;
-}
-
-static bool print_guesses_vs_max() {
-    printf("%d characters guessed, %d guesses left\n", game.guesses, MAXMISSEDGUESSES - game.guesses);
-    return true;
-}
-
 static bool prepare_game_state() {
+    game.success = false;
+    game.missed = 0;
+    game.guesses = 0;
     game.guessedChars = calloc(sizeof(char), strlen(game.chosenWord) + MAXMISSEDGUESSES);
     return true;
 }
@@ -202,7 +196,6 @@ static char get_guess() {
     fflush(stdout);
     c = fgetc(stdin);
     flush_stdin();
-    game.guesses++;
     return c;
 }
 
@@ -217,7 +210,6 @@ static bool is_char_in_string(char c, char* char_array) {
 }
 
 static void game_loop() {
-    static unsigned int loop = 0;
     debug_game_state();
     char guess = get_guess();
     if (is_char_in_string(guess, game.guessedChars)) {
@@ -225,21 +217,19 @@ static void game_loop() {
     }
     else {
         if(is_char_in_string(guess, game.chosenWord)) {
-
+            // function to handle positive guesses
         }
         else {
             game.missed++;
         }
         game.guessedChars[strlen(game.guessedChars)] = guess;
+        game.guesses++;
     }
 
-    if (loop == 3) {
+    if (game.missed >= MAXMISSEDGUESSES) {
         game.running = false;
+        debug_game_state();
     }
-    loop++;
-    // display letters guessed already
-    // prompt for guess
-    // evaluate win/loss state
 
 }
 
@@ -274,6 +264,7 @@ int main(void) {
     while (game.running) {
         game_loop();
     }
+    // function to evaluate success
 
     return status;
 }
