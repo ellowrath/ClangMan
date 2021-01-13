@@ -8,19 +8,10 @@
 #include <time.h>
 
 #define NAMESIZE 13
-#define WORDLIST "wordlist.txt"
-#define NAMEATTEMPTS 3
-#define MAXMISSEDGUESSES 6
-#define WELCOME "Welcome to ClangMan."
-#define NAMEREQUEST "Please enter your name, 12 characters or less: "
-#define NAMEDENIED "You've failed to enter your name 3 times, Game terminated!"
-#define DUPEGUESS "You've already guessed that letter, please try again."
-#define CORRECTLETTER1 "Good stuff! "
-#define CORRECTLETTER2 " is a good guess."
-#define INCORRECTLETTER1 "I'm sorry! "
-#define INCORRECTLETTER2 " is not a good guess."
-#define MASKEDWORD "Guess this word:"
-#define GUESSEDLETTERS "These are you past guesses:"
+
+static const unsigned int MAXMISSEDGUESSES = 6;
+static const char WORDLIST[] = "wordlist.txt";
+static const char MASKEDWORD[] = "Guess this word:"; // used in two places, rethink that.
 
 typedef struct {
     char playerName[NAMESIZE];
@@ -52,28 +43,13 @@ static void flush_stdin() {
     while(fgetc(stdin) != '\n');
 }
 
-static bool print_welcome_message() {
-    printf("%s\n", WELCOME);
-    return true;
-}
-
 static bool get_player_name() {
-    printf("%s\n", NAMEREQUEST);
+    printf("Please enter your name, 12 characters or less: \n");
     fgets(game.playerName, NAMESIZE, stdin);
     if (strlen(game.playerName) < 2) {
         return false;
     }
     game.playerName[strcspn(game.playerName, "\n")] = 0;
-    return true;
-}
-
-static bool print_name_error() {
-    printf("%s\n", NAMEDENIED);
-    return true;
-}
-
-static bool print_player_name() {
-    printf("%s\n", game.playerName);
     return true;
 }
 
@@ -229,24 +205,24 @@ static void game_loop() {
     // debug_game_state();
     char guess = get_guess();
     if (is_char_in_string(guess, game.guessedChars)) {
-        printf("%s\n", DUPEGUESS);
+        printf("You've already guessed that letter, please try again.\n");
     }
     else {
         if(is_char_in_string(guess, game.chosenWord)) {
             process_successful_guess(guess);
-            printf("%s%c%s\n", CORRECTLETTER1, guess, CORRECTLETTER2);
+            printf("Good stuff! %c is a good guess.\n", guess);
             if (evaluate_victory()) {
                 game.running = false;
             }
         }
         else {
-            printf("%s%c%s\n", INCORRECTLETTER1, guess, INCORRECTLETTER2);
+            printf("I'm sorry! %c is not a good guess.\n", guess);
             game.missed++;
         }
         game.guessedChars[strlen(game.guessedChars)] = guess;
         game.guesses++;
         printf("%s %s\n", MASKEDWORD, game.maskedWord);
-        printf("%s %s\n", GUESSEDLETTERS, game.guessedChars);
+        printf("These are you past guesses: %s\n", game.guessedChars);
     }
 
     if (game.missed >= MAXMISSEDGUESSES) {
@@ -258,41 +234,43 @@ static void game_loop() {
 
 int main(void) {
     int status = EXIT_FAILURE;
-    int name_attempts = NAMEATTEMPTS;
+    int name_attempts = 3;
     unsigned int chosen_line;
     game.running = true;
 
-    if (print_welcome_message()){
-        status = EXIT_SUCCESS;
-    }
+    printf("Welcome to ClangMan\n");
 
     while (name_attempts > 0 && !get_player_name()) {
         name_attempts--;
     }
     
     if (name_attempts == 0) {
-        status = print_name_error();
+        printf("You've failed to enter your name 3 times, Game terminated!\n");
+        status = EXIT_SUCCESS;
     }
     else {
-        status = print_player_name();
+        printf("%s\n", game.playerName);
     }
 
-    chosen_line = get_random_range(0, get_file_line_length());
-    set_word_by_line_num(chosen_line);
+    if (status) {
+        chosen_line = get_random_range(0, get_file_line_length());
+        set_word_by_line_num(chosen_line);
 
-    prepare_game_state();
-    printf("%s %s\n", MASKEDWORD, game.maskedWord);
+        prepare_game_state();
+        printf("%s %s\n", MASKEDWORD, game.maskedWord);
 
-    while (game.running) {
-        game_loop();
-    }
-    if (evaluate_victory()) {
-        printf("Congratulations %s, you guessed \"%s\" in %d.\n", game.playerName, game.chosenWord, game.guesses);
-        printf("You had %d guesses left before failure. Good job!\n", MAXMISSEDGUESSES - game.missed);
-    }
-    else {
-        printf("I'm sorry to report that you have failed to guess \"%s\".\n", game.chosenWord); 
-        printf("Good luck next time %s.\n", game.playerName);
+        while (game.running) {
+            game_loop();
+        }
+        if (evaluate_victory()) {
+            printf("Congratulations %s, you guessed \"%s\" in %d.\n", game.playerName, game.chosenWord, game.guesses);
+            printf("You had %d guesses left before failure. Good job!\n", MAXMISSEDGUESSES - game.missed);
+        }
+        else {
+            printf("I'm sorry to report that you have failed to guess \"%s\".\n", game.chosenWord); 
+            printf("Good luck next time %s.\n", game.playerName);
+        }
+
     }
 
     return status;
