@@ -10,7 +10,6 @@
 // static const unsigned int NAMESIZE = 13;
 // even static const, the above gives me variably modified at file scope error
 enum {NAMESIZE = 13};
-
 static const unsigned int MAXMISSEDGUESSES = 6;
 static const char WORDLIST[] = "wordlist.txt";
 static const char MASKEDWORD[] = "Guess this word:"; // used in two places, rethink that.
@@ -99,8 +98,7 @@ static unsigned int get_random_range(unsigned int begin, unsigned int end) {
     return (rand() % (end - begin +1)) + begin;
 }
 
-static bool set_word_by_line_num(unsigned int line) {
-    bool ret = false;
+static void set_word_by_line_num(unsigned int line) {
     int current_line = 0;
     struct statfs fsInfo = {0};
     int fd;
@@ -131,7 +129,6 @@ static bool set_word_by_line_num(unsigned int line) {
         if (current_line > line && j > 0) {
             chosen_word[j-1] = '\0';
             game.chosenWord = chosen_word;
-            ret = true;
         }
         if (i == optimalSize) {
             i = 0;
@@ -156,15 +153,13 @@ static bool set_word_by_line_num(unsigned int line) {
 
     close(fd);
     free(p);
-    return ret;
 }
 
-static bool prepare_game_state() {
+static void prepare_game_state() {
     game.success = false;
     game.missed = 0;
     game.guesses = 0;
     game.guessedChars = calloc(sizeof(char), strlen(game.chosenWord) + MAXMISSEDGUESSES);
-    return true;
 }
 
 static char get_guess() {
