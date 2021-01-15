@@ -7,7 +7,9 @@
 #include <fcntl.h>
 #include <time.h>
 
-#define NAMESIZE 13
+// static const unsigned int NAMESIZE = 13;
+// even static const, the above gives me variably modified at file scope error
+enum {NAMESIZE = 13};
 
 static const unsigned int MAXMISSEDGUESSES = 6;
 static const char WORDLIST[] = "wordlist.txt";
