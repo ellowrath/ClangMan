@@ -41,10 +41,6 @@ static void debug_game_state() {
     fflush(stdout);
 }
 
-static void flush_stdin() {
-    while(fgetc(stdin) != '\n');
-}
-
 static bool get_player_name() {
     printf("Please enter your name, 12 characters or less: \n");
     fgets(game.playerName, NAMESIZE, stdin);
@@ -168,7 +164,7 @@ static void get_guess() {
     printf("Please enter a single character guess: ");
     fflush(stdout);
     fgets(game.lastGuess, 2, stdin);
-    flush_stdin();
+    while(fgetc(stdin) != '\n');
 }
 
 static void process_successful_guess(char c) {
