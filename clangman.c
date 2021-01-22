@@ -179,10 +179,6 @@ static void process_successful_guess(char c) {
     }
 }
 
-static bool evaluate_victory() {
-    return (strcmp(game.chosenWord, game.maskedWord) == 0);
-}
-
 static void game_loop() {
     // debug_game_state();
     get_guess();
@@ -193,7 +189,7 @@ static void game_loop() {
         if(strstr(game.chosenWord, game.lastGuess) != NULL) {
             process_successful_guess(*game.lastGuess);
             printf("Good stuff! %c is a good guess.\n", *game.lastGuess);
-            if (evaluate_victory()) {
+            if (strcmp(game.chosenWord, game.maskedWord) ==0) {
                 game.running = false;
             }
         }
@@ -244,7 +240,7 @@ int main(void) {
         while (game.running) {
             game_loop();
         }
-        if (evaluate_victory()) {
+        if (strcmp(game.chosenWord, game.maskedWord) == 0) {
             printf("Congratulations %s, you guessed \"%s\" in %d.\n", game.playerName, game.chosenWord, game.guesses);
             printf("You had %d guesses left before failure. Good job!\n", MAXMISSEDGUESSES - game.missed);
         }
