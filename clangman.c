@@ -19,6 +19,7 @@ typedef struct {
     char *chosenWord;
     char *maskedWord;
     char *guessedChars;
+    char *lastGuess;
     bool running;
     bool success;
     unsigned int guesses;
@@ -160,25 +161,14 @@ static void prepare_game_state() {
     game.missed = 0;
     game.guesses = 0;
     game.guessedChars = calloc(sizeof(char), strlen(game.chosenWord) + MAXMISSEDGUESSES);
+    game.lastGuess = calloc(sizeof(char), 1);
 }
 
-static char get_guess() {
-    char c;
+static void get_guess() {
     printf("Please enter a single character guess: ");
     fflush(stdout);
-    c = fgetc(stdin);
+    fgets(game.lastGuess, 2, stdin);
     flush_stdin();
-    return c;
-}
-
-static bool is_char_in_string(char c, char* char_array) {
-    bool ret = false;
-    for (int i = 0; i < strlen(char_array); i++) {
-        if (c == char_array[i]) {
-            ret = true;
-        }
-    }
-    return ret;
 }
 
 static void process_successful_guess(char c) {
@@ -190,33 +180,28 @@ static void process_successful_guess(char c) {
 }
 
 static bool evaluate_victory() {
-    if (strcmp(game.chosenWord, game.maskedWord) == 0) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    return (strcmp(game.chosenWord, game.maskedWord) == 0);
 }
 
 static void game_loop() {
     // debug_game_state();
-    char guess = get_guess();
-    if (is_char_in_string(guess, game.guessedChars)) {
+    get_guess();
+    if (strstr(game.guessedChars, game.lastGuess) != NULL) {
         printf("You've already guessed that letter, please try again.\n");
     }
     else {
-        if(is_char_in_string(guess, game.chosenWord)) {
-            process_successful_guess(guess);
-            printf("Good stuff! %c is a good guess.\n", guess);
+        if(strstr(game.chosenWord, game.lastGuess) != NULL) {
+            process_successful_guess(*game.lastGuess);
+            printf("Good stuff! %c is a good guess.\n", *game.lastGuess);
             if (evaluate_victory()) {
                 game.running = false;
             }
         }
         else {
-            printf("I'm sorry! %c is not a good guess.\n", guess);
+            printf("I'm sorry! %c is not a good guess.\n", *game.lastGuess);
             game.missed++;
         }
-        game.guessedChars[strlen(game.guessedChars)] = guess;
+        game.guessedChars[strlen(game.guessedChars)] = *game.lastGuess;
         game.guesses++;
         printf("%s %s\n", MASKEDWORD, game.maskedWord);
         printf("These are you past guesses: %s\n", game.guessedChars);
