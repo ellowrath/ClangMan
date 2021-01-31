@@ -52,42 +52,42 @@ static bool get_player_name() {
 }
 
 static unsigned int get_file_line_length() {
-    int ret = 0;
+    int line_length = 0;
     struct statfs fsInfo = {0};
-    int fd;
-    fd = open(WORDLIST, O_RDONLY);
+    int file_descriptor;
+    file_descriptor = open(WORDLIST, O_RDONLY);
     long optimalSize;
 
-    if(fstatfs(fd, &fsInfo) == -1) {
+    if(fstatfs(file_descriptor, &fsInfo) == -1) {
         optimalSize = 4 * 1024 * 1024;
     }
     else {
         optimalSize = fsInfo.f_bsize;
     }
 
-    char *p = malloc(sizeof(*p) * optimalSize);
-    size_t read_bytes = read(fd, p, optimalSize);
-    unsigned int i = 0;
+    char *test_char = malloc(sizeof(*test_char) * optimalSize);
+    size_t read_bytes = read(file_descriptor, test_char, optimalSize);
+    unsigned int counter = 0;
 
     // add some error checking 
 
     while (read_bytes) {
-        if (p[i] == '\n') {
-            ret++;
+        if (test_char[counter] == '\n') {
+            line_length++;
         }
-        if (i == optimalSize) {
-            i = 0;
-            read_bytes = read(fd, p, optimalSize);
+        if (counter == optimalSize) {
+            counter = 0;
+            read_bytes = read(file_descriptor, test_char, optimalSize);
             if (read_bytes < optimalSize && read_bytes > 0) {
                 optimalSize = read_bytes;
             }
         }
-        i++;
+        counter++;
     }
 
-    close(fd);
-    free(p);
-    return ret;
+    close(file_descriptor);
+    free(test_char);
+    return line_length;
 }
 
 static unsigned int get_random_range(unsigned int begin, unsigned int end) {
@@ -98,58 +98,57 @@ static unsigned int get_random_range(unsigned int begin, unsigned int end) {
 static void set_word_by_line_num(unsigned int line) {
     int current_line = 0;
     struct statfs fsInfo = {0};
-    int fd;
-    fd = open(WORDLIST, O_RDONLY);
+    int file_descriptor;
+    file_descriptor = open(WORDLIST, O_RDONLY);
     long optimalSize;
 
-    if(fstatfs(fd, &fsInfo) == -1) {
+    if(fstatfs(file_descriptor, &fsInfo) == -1) {
         optimalSize = 4 * 1024 * 1024;
     }
     else {
         optimalSize = fsInfo.f_bsize;
     }
 
-    char *p = malloc(sizeof(*p) * optimalSize);
+    char *test_char = malloc(sizeof(*test_char) * optimalSize);
     char *chosen_word = malloc(100);
-    size_t read_bytes = read(fd, p, optimalSize);
-    unsigned int i = 0;
-    unsigned int j = 0;
+    size_t read_bytes = read(file_descriptor, test_char, optimalSize);
+    unsigned int line_counter = 0;
+    unsigned int character_counter = 0;
 
     while (read_bytes) {
-        if (p[i] == '\n') {
+        if (test_char[line_counter] == '\n') {
             current_line++;
         }
         if (current_line == line) {
-            chosen_word[j] = p[i+1];
-            j++;
+            chosen_word[character_counter] = test_char[line_counter+1];
+            character_counter++;
         }
-        if (current_line > line && j > 0) {
-            chosen_word[j-1] = '\0';
+        if (current_line > line && character_counter > 0) {
+            chosen_word[character_counter-1] = '\0';
             game.chosenWord = chosen_word;
         }
-        if (i == optimalSize) {
-            i = 0;
-            read_bytes = read(fd, p, optimalSize);
+        if (line_counter == optimalSize) {
+            line_counter = 0;
+            read_bytes = read(file_descriptor, test_char, optimalSize);
             if (read_bytes < optimalSize && read_bytes > 0) {
                 optimalSize = read_bytes;
             }
         }
-        i++;
+        line_counter++;
     }
     
     char *masked_word = malloc(strlen(game.chosenWord));
-
-    for (i = 0; i < strlen(chosen_word); i++) {
+    for (int i = 0; i < strlen(chosen_word); i++) {
         masked_word[i] = '~';
     }
-    masked_word[i] = '\0';
+    masked_word[strlen(masked_word)] = '\0';
     game.maskedWord = masked_word;
 
     // printf("chosen word %s is %zu characters long\n", game.chosenWord, strlen(game.chosenWord));
     // printf("masked word %s is %zu characters long\n", game.maskedWord, strlen(game.maskedWord));
 
-    close(fd);
-    free(p);
+    close(file_descriptor);
+    free(test_char);
 }
 
 static void prepare_game_state() {
