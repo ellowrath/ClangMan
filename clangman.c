@@ -73,7 +73,7 @@ static unsigned int get_file_line_length() {
 
     while (read_bytes) {
         if (test_char[counter] == '\n') {
-            line_length++;
+            ++line_length;
         }
         if (counter == optimalSize) {
             counter = 0;
@@ -82,7 +82,7 @@ static unsigned int get_file_line_length() {
                 optimalSize = read_bytes;
             }
         }
-        counter++;
+        ++counter;
     }
 
     close(file_descriptor);
@@ -117,11 +117,11 @@ static void set_word_by_line_num(unsigned int line) {
 
     while (read_bytes) {
         if (test_char[line_counter] == '\n') {
-            current_line++;
+            ++current_line;
         }
         if (current_line == line) {
             chosen_word[character_counter] = test_char[line_counter+1];
-            character_counter++;
+            ++character_counter;
         }
         if (current_line > line && character_counter > 0) {
             chosen_word[character_counter-1] = '\0';
@@ -134,11 +134,11 @@ static void set_word_by_line_num(unsigned int line) {
                 optimalSize = read_bytes;
             }
         }
-        line_counter++;
+        ++line_counter;
     }
     
     char *masked_word = malloc(strlen(game.chosenWord));
-    for (int i = 0; i < strlen(chosen_word); i++) {
+    for (int i = 0; i < strlen(chosen_word); ++i) {
         masked_word[i] = '~';
     }
     masked_word[strlen(masked_word)] = '\0';
@@ -167,7 +167,7 @@ static void get_guess() {
 }
 
 static void process_successful_guess(char c) {
-    for (int i = 0; i < strlen(game.chosenWord); i++) {
+    for (int i = 0; i < strlen(game.chosenWord); ++i) {
         if (c == game.chosenWord[i]) {
             game.maskedWord[i] = game.chosenWord[i];
         }
@@ -190,10 +190,10 @@ static void game_loop() {
         }
         else {
             printf("I'm sorry! %c is not a good guess.\n", *game.lastGuess);
-            game.missed++;
+            ++game.missed;
         }
         game.guessedChars[strlen(game.guessedChars)] = *game.lastGuess;
-        game.guesses++;
+        ++game.guesses;
         printf("%s %s\n", MASKEDWORD, game.maskedWord);
         printf("These are you past guesses: %s\n", game.guessedChars);
     }
@@ -214,7 +214,7 @@ int main(void) {
     printf("Welcome to ClangMan\n");
 
     while (name_attempts > 0 && !get_player_name()) {
-        name_attempts--;
+        --name_attempts;
     }
     
     if (name_attempts == 0) {
